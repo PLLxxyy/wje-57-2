@@ -1,8 +1,13 @@
 import RecipeGrid from '@/components/RecipeGrid';
+import GroupTabs from '@/components/GroupTabs';
 import { useCoffeeStore } from '@/store/useCoffeeStore';
 
 export default function HistoryPage() {
-  const { history } = useCoffeeStore();
+  const { history, groups, activeGroupIds, setActiveGroup } = useCoffeeStore();
+
+  const handleGroupChange = (groupId: string | null) => {
+    setActiveGroup(groupId, 'history');
+  };
 
   return (
     <div className="min-h-[calc(100vh-70px)] bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -16,7 +21,19 @@ export default function HistoryPage() {
           </p>
         </div>
 
-        <RecipeGrid recipes={history} type="history" />
+        <GroupTabs
+          groups={groups}
+          activeGroupId={activeGroupIds.history}
+          type="history"
+          onGroupChange={handleGroupChange}
+        />
+
+        <RecipeGrid
+          recipes={history}
+          type="history"
+          groups={groups}
+          activeGroupId={activeGroupIds.history}
+        />
       </div>
     </div>
   );

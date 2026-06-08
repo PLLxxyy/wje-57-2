@@ -1,5 +1,12 @@
 export type CardStyle = 'vintage' | 'minimalist' | 'midnight' | 'spring';
 
+export interface Group {
+  id: string;
+  name: string;
+  type: 'favorites' | 'history';
+  createdAt: number;
+}
+
 export interface CoffeeRecipe {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ export interface CoffeeRecipe {
   createdAt: number;
   isFavorite: boolean;
   style: CardStyle;
+  groupId: string | null;
 }
 
 export interface CoffeeShop {

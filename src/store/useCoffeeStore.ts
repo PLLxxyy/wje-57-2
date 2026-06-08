@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CardStyle, CoffeeCardData, CoffeeRecipe } from '@/types';
+import { CardStyle, CoffeeCardData, CoffeeRecipe, Group } from '@/types';
 import { generateRecipe } from '@/utils/recipeGenerator';
 import { generateCoffeeName } from '@/utils/nameGenerator';
 import { generateDescription } from '@/utils/descriptionGenerator';
@@ -10,6 +10,11 @@ interface CoffeeState {
   currentCard: CoffeeCardData | null;
   favorites: CoffeeRecipe[];
   history: CoffeeRecipe[];
+  groups: Group[];
+  activeGroupIds: {
+    favorites: string | null;
+    history: string | null;
+  };
   currentStyle: CardStyle;
   isGenerating: boolean;
   
@@ -19,7 +24,14 @@ interface CoffeeState {
   clearHistory: () => void;
   removeFavorite: (recipeId: string) => void;
   loadRecipeFromHistory: (recipe: CoffeeRecipe) => void;
+  createGroup: (name: string, type: 'favorites' | 'history') => void;
+  updateGroup: (groupId: string, name: string) => void;
+  deleteGroup: (groupId: string) => void;
+  setActiveGroup: (groupId: string | null, type: 'favorites' | 'history') => void;
+  moveRecipeToGroup: (recipeId: string, groupId: string | null, type: 'favorites' | 'history') => void;
 }
+
+const generateId = () => Math.random().toString(36).substring(2, 11);
 
 export const useCoffeeStore = create<CoffeeState>()(
   persist(
@@ -27,6 +39,11 @@ export const useCoffeeStore = create<CoffeeState>()(
       currentCard: null,
       favorites: [],
       history: [],
+      groups: [],
+      activeGroupIds: {
+        favorites: null,
+        history: null,
+      },
       currentStyle: 'vintage',
       isGenerating: false,
 
@@ -49,6 +66,7 @@ export const useCoffeeStore = create<CoffeeState>()(
             ...baseRecipe,
             name,
             description,
+            groupId: null,
           };
 
           const cardData: CoffeeCardData = {
@@ -76,7 +94,12 @@ export const useCoffeeStore = create<CoffeeState>()(
             const recipeToAdd = state.currentCard?.recipe 
               || state.history.find(h => h.id === recipeId);
             if (recipeToAdd) {
-              newFavorites = [{ ...recipeToAdd, isFavorite: true }, ...state.favorites];
+              const existingRecipeInHistory = state.history.find(h => h.id === recipeId);
+              newFavorites = [{ 
+                ...recipeToAdd, 
+                isFavorite: true,
+                groupId: existingRecipeInHistory?.groupId || null,
+              }, ...state.favorites];
             } else {
               newFavorites = state.favorites;
             }
@@ -138,12 +161,88 @@ export const useCoffeeStore = create<CoffeeState>()(
           currentStyle: recipe.style,
         }));
       },
+
+      createGroup: (name: string, type: 'favorites' | 'history') => {
+        const newGroup: Group = {
+          id: generateId(),
+          name,
+          type,
+          createdAt: Date.now(),
+        };
+        set((state) => ({
+          groups: [...state.groups, newGroup],
+        }));
+      },
+
+      updateGroup: (groupId: string, name: string) => {
+        set((state) => ({
+          groups: state.groups.map(g => 
+            g.id === groupId ? { ...g, name } : g
+          ),
+        }));
+      },
+
+      deleteGroup: (groupId: string) => {
+        set((state) => {
+          const group = state.groups.find(g => g.id === groupId);
+          if (!group) return state;
+
+          const updatedFavorites = state.favorites.map(r => 
+            r.groupId === groupId ? { ...r, groupId: null } : r
+          );
+          const updatedHistory = state.history.map(r => 
+            r.groupId === groupId ? { ...r, groupId: null } : r
+          );
+
+          const newActiveGroupIds = { ...state.activeGroupIds };
+          if (newActiveGroupIds[group.type] === groupId) {
+            newActiveGroupIds[group.type] = null;
+          }
+
+          return {
+            groups: state.groups.filter(g => g.id !== groupId),
+            favorites: updatedFavorites,
+            history: updatedHistory,
+            activeGroupIds: newActiveGroupIds,
+          };
+        });
+      },
+
+      setActiveGroup: (groupId: string | null, type: 'favorites' | 'history') => {
+        set((state) => ({
+          activeGroupIds: {
+            ...state.activeGroupIds,
+            [type]: groupId,
+          },
+        }));
+      },
+
+      moveRecipeToGroup: (recipeId: string, groupId: string | null, type: 'favorites' | 'history') => {
+        set((state) => {
+          const updateRecipe = (r: CoffeeRecipe) => 
+            r.id === recipeId ? { ...r, groupId } : r;
+
+          if (type === 'favorites') {
+            return {
+              favorites: state.favorites.map(updateRecipe),
+              history: state.history.map(updateRecipe),
+            };
+          } else {
+            return {
+              history: state.history.map(updateRecipe),
+              favorites: state.favorites.map(updateRecipe),
+            };
+          }
+        });
+      },
     }),
     {
       name: 'coffee-generator-storage',
       partialize: (state) => ({
         favorites: state.favorites,
         history: state.history,
+        groups: state.groups,
+        activeGroupIds: state.activeGroupIds,
         currentStyle: state.currentStyle,
       }),
     }

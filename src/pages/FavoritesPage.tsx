@@ -1,8 +1,13 @@
 import RecipeGrid from '@/components/RecipeGrid';
+import GroupTabs from '@/components/GroupTabs';
 import { useCoffeeStore } from '@/store/useCoffeeStore';
 
 export default function FavoritesPage() {
-  const { favorites } = useCoffeeStore();
+  const { favorites, groups, activeGroupIds, setActiveGroup } = useCoffeeStore();
+
+  const handleGroupChange = (groupId: string | null) => {
+    setActiveGroup(groupId, 'favorites');
+  };
 
   return (
     <div className="min-h-[calc(100vh-70px)] bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
@@ -16,7 +21,19 @@ export default function FavoritesPage() {
           </p>
         </div>
 
-        <RecipeGrid recipes={favorites} type="favorites" />
+        <GroupTabs
+          groups={groups}
+          activeGroupId={activeGroupIds.favorites}
+          type="favorites"
+          onGroupChange={handleGroupChange}
+        />
+
+        <RecipeGrid
+          recipes={favorites}
+          type="favorites"
+          groups={groups}
+          activeGroupId={activeGroupIds.favorites}
+        />
       </div>
     </div>
   );
