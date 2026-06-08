@@ -15,13 +15,19 @@ export default function RecipeGrid({ recipes, type, groups, activeGroupId }: Pro
   const navigate = useNavigate();
   const { removeFavorite, toggleFavorite, clearHistory, loadRecipeFromHistory, moveRecipeToGroup } = useCoffeeStore();
 
+  const getGroupId = (recipe: CoffeeRecipe) => {
+    return type === 'favorites' ? recipe.favoriteGroupId : recipe.historyGroupId;
+  };
+
   const filteredRecipes = recipes.filter(recipe => {
     if (activeGroupId === null) return true;
-    if (activeGroupId === 'ungrouped') return recipe.groupId === null;
-    return recipe.groupId === activeGroupId;
+    const recipeGroupId = getGroupId(recipe);
+    if (activeGroupId === 'ungrouped') return recipeGroupId === null;
+    return recipeGroupId === activeGroupId;
   });
 
-  const getGroupName = (groupId: string | null) => {
+  const getGroupName = (recipe: CoffeeRecipe) => {
+    const groupId = getGroupId(recipe);
     if (!groupId) return null;
     return groups.find(g => g.id === groupId)?.name;
   };
@@ -111,7 +117,8 @@ export default function RecipeGrid({ recipes, type, groups, activeGroupId }: Pro
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredRecipes.map((recipe) => {
-          const groupName = getGroupName(recipe.groupId);
+          const groupName = getGroupName(recipe);
+          const currentGroupId = getGroupId(recipe);
           return (
           <div
             key={recipe.id}
@@ -168,7 +175,7 @@ export default function RecipeGrid({ recipes, type, groups, activeGroupId }: Pro
                 <div className="flex items-center gap-1">
                   <MoveToGroupMenu
                     recipeId={recipe.id}
-                    currentGroupId={recipe.groupId}
+                    currentGroupId={currentGroupId}
                     groups={groups}
                     type={type}
                     onMove={moveRecipeToGroup}

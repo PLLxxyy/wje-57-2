@@ -66,7 +66,8 @@ export const useCoffeeStore = create<CoffeeState>()(
             ...baseRecipe,
             name,
             description,
-            groupId: null,
+            favoriteGroupId: null,
+            historyGroupId: null,
           };
 
           const cardData: CoffeeCardData = {
@@ -95,10 +96,12 @@ export const useCoffeeStore = create<CoffeeState>()(
               || state.history.find(h => h.id === recipeId);
             if (recipeToAdd) {
               const existingRecipeInHistory = state.history.find(h => h.id === recipeId);
+              const existingRecipeInFavorites = state.favorites.find(f => f.id === recipeId);
               newFavorites = [{ 
                 ...recipeToAdd, 
                 isFavorite: true,
-                groupId: existingRecipeInHistory?.groupId || null,
+                favoriteGroupId: existingRecipeInFavorites?.favoriteGroupId || null,
+                historyGroupId: existingRecipeInHistory?.historyGroupId || recipeToAdd.historyGroupId || null,
               }, ...state.favorites];
             } else {
               newFavorites = state.favorites;
@@ -187,12 +190,18 @@ export const useCoffeeStore = create<CoffeeState>()(
           const group = state.groups.find(g => g.id === groupId);
           if (!group) return state;
 
-          const updatedFavorites = state.favorites.map(r => 
-            r.groupId === groupId ? { ...r, groupId: null } : r
-          );
-          const updatedHistory = state.history.map(r => 
-            r.groupId === groupId ? { ...r, groupId: null } : r
-          );
+          let updatedFavorites = state.favorites;
+          let updatedHistory = state.history;
+
+          if (group.type === 'favorites') {
+            updatedFavorites = state.favorites.map(r => 
+              r.favoriteGroupId === groupId ? { ...r, favoriteGroupId: null } : r
+            );
+          } else {
+            updatedHistory = state.history.map(r => 
+              r.historyGroupId === groupId ? { ...r, historyGroupId: null } : r
+            );
+          }
 
           const newActiveGroupIds = { ...state.activeGroupIds };
           if (newActiveGroupIds[group.type] === groupId) {
@@ -219,18 +228,17 @@ export const useCoffeeStore = create<CoffeeState>()(
 
       moveRecipeToGroup: (recipeId: string, groupId: string | null, type: 'favorites' | 'history') => {
         set((state) => {
-          const updateRecipe = (r: CoffeeRecipe) => 
-            r.id === recipeId ? { ...r, groupId } : r;
-
           if (type === 'favorites') {
+            const updateFavoriteRecipe = (r: CoffeeRecipe) => 
+              r.id === recipeId ? { ...r, favoriteGroupId: groupId } : r;
             return {
-              favorites: state.favorites.map(updateRecipe),
-              history: state.history.map(updateRecipe),
+              favorites: state.favorites.map(updateFavoriteRecipe),
             };
           } else {
+            const updateHistoryRecipe = (r: CoffeeRecipe) => 
+              r.id === recipeId ? { ...r, historyGroupId: groupId } : r;
             return {
-              history: state.history.map(updateRecipe),
-              favorites: state.favorites.map(updateRecipe),
+              history: state.history.map(updateHistoryRecipe),
             };
           }
         });

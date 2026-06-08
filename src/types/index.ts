@@ -18,7 +18,8 @@ export interface CoffeeRecipe {
   createdAt: number;
   isFavorite: boolean;
   style: CardStyle;
-  groupId: string | null;
+  favoriteGroupId: string | null;
+  historyGroupId: string | null;
 }
 
 export interface CoffeeShop {

@@ -32,6 +32,7 @@ export function generateRecipe(style: CardStyle): CoffeeRecipe {
     createdAt: Date.now(),
     isFavorite: false,
     style,
-    groupId: null,
+    favoriteGroupId: null,
+    historyGroupId: null,
   };
 }
